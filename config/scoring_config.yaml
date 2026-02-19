@@ -1,0 +1,219 @@
+# RealFood? Scoring Engine Configuration
+# Version: 1.0.0
+# Aligned with: UK FSA Front-of-Pack Traffic Light, NOVA Classification
+
+# ---------------------------------------------------------------------------
+# Composite Score Weights
+# ---------------------------------------------------------------------------
+composite:
+  alpha: 0.55  # Ingredient quality weight
+  beta: 0.45   # Nutritional profile weight
+
+# ---------------------------------------------------------------------------
+# Traffic Light Thresholds
+# ---------------------------------------------------------------------------
+traffic_light:
+  green:
+    min: 75
+    max: 100
+    label: "Good choice"
+  amber:
+    min: 45
+    max: 74
+    label: "Some concerns"
+  red:
+    min: 0
+    max: 44
+    label: "High concern"
+
+# ---------------------------------------------------------------------------
+# UPF Ingredient Penalty Weights
+# ---------------------------------------------------------------------------
+upf_penalties:
+  class_a_critical:
+    base_weight: 8.0
+    ingredients:
+      - hydrogenated_fat
+      - partially_hydrogenated_fat
+      - high_fructose_corn_syrup
+      - glucose_fructose_syrup
+      - aspartame           # E951
+      - acesulfame_k        # E950
+      - sucralose           # E955
+      - saccharin           # E954
+      - sodium_nitrite      # E250
+
+  class_b_high:
+    base_weight: 5.0
+    ingredients:
+      - modified_starch
+      - polysorbate_80      # E433
+      - carrageenan         # E407
+      - sodium_triphosphate # E451
+      - e102_tartrazine
+      - e110_sunset_yellow
+      - e122_carmoisine
+      - e124_ponceau_4r
+      - e129_allura_red
+      - e211_sodium_benzoate
+      - mono_diglycerides   # E471
+      - soya_lecithin       # E322 (when used as emulsifier in UPF context)
+
+  class_c_moderate:
+    base_weight: 3.0
+    ingredients:
+      - maltodextrin
+      - dextrose
+      - flavourings_unspecified  # "flavouring" or "flavourings" without "natural"
+      - invert_sugar_syrup
+      - glucose_syrup
+      - smoke_flavouring
+      - glycerol            # E422
+      - caramel_colour      # E150a-d
+
+  class_d_low:
+    base_weight: 1.5
+    ingredients:
+      - citric_acid_functional  # E330 when used as processing aid, not flavour
+      - pectin_non_fruit        # E440 outside fruit product context
+      - xanthan_gum             # E415
+      - guar_gum                # E412
+      - ascorbic_acid_additive  # E300 as flour treatment agent
+
+# Position decay function: w = base_weight * (1 - (pos-1)/N)^0.5
+position_decay_exponent: 0.5
+
+# ---------------------------------------------------------------------------
+# FSA Nutritional Thresholds (per 100g for food)
+# ---------------------------------------------------------------------------
+fsa_thresholds_food:
+  fat_g:
+    green_max: 3.0
+    red_min: 17.5
+    max_penalty: 5.0
+  saturates_g:
+    green_max: 1.5
+    red_min: 5.0
+    max_penalty: 5.0
+  sugars_g:
+    green_max: 5.0
+    red_min: 22.5
+    max_penalty: 6.0
+  salt_g:
+    green_max: 0.3
+    red_min: 1.5
+    max_penalty: 6.0
+
+# FSA thresholds for drinks (per 100ml)
+fsa_thresholds_drink:
+  fat_g:
+    green_max: 1.5
+    red_min: 8.75
+    max_penalty: 5.0
+  saturates_g:
+    green_max: 0.75
+    red_min: 2.5
+    max_penalty: 5.0
+  sugars_g:
+    green_max: 2.5
+    red_min: 11.25
+    max_penalty: 6.0
+  salt_g:
+    green_max: 0.3
+    red_min: 1.5
+    max_penalty: 6.0
+
+# ---------------------------------------------------------------------------
+# Additive Risk Tiers
+# ---------------------------------------------------------------------------
+additive_tiers:
+  tier_1_under_review:
+    penalty: 4.0
+    additives:
+      - E171  # titanium dioxide — banned in EU, FSA reviewing
+      - E110  # sunset yellow — Southampton Six
+      - E129  # allura red — Southampton Six
+      - E102  # tartrazine — Southampton Six
+      - E104  # quinoline yellow — Southampton Six
+      - E122  # carmoisine — Southampton Six
+      - E124  # ponceau 4R — Southampton Six
+
+  tier_2_contested:
+    penalty: 2.5
+    additives:
+      - E250  # sodium nitrite
+      - E251  # sodium nitrate
+      - E621  # MSG
+      - E951  # aspartame
+      - E950  # acesulfame K
+      - E407  # carrageenan
+
+  tier_3_generally_recognised:
+    penalty: 0.5
+    additives:
+      - E330  # citric acid
+      - E322  # lecithins
+      - E412  # guar gum
+      - E415  # xanthan gum
+      - E440  # pectin
+      - E300  # ascorbic acid
+      - E160a # beta-carotene
+
+  max_additive_penalty: 15.0
+
+# ---------------------------------------------------------------------------
+# Label Trick Penalties
+# ---------------------------------------------------------------------------
+label_tricks:
+  broken_out_sugars:
+    penalty: 5.0
+    trigger: "3 or more distinct sugar sources in ingredient list"
+  flavouring_ambiguity:
+    penalty: 2.0
+    trigger: "Unqualified 'flavouring' or 'flavourings' without 'natural' prefix"
+  clean_label_swap:
+    penalty: 3.0
+    trigger: "Known UPF substitute detected"
+  percentage_game:
+    penalty: 4.0
+    trigger: "Characterising ingredient below 25% in a named product"
+  health_halo:
+    penalty: 3.0
+    trigger: "'No added sugar' with concentrated fruit juice sweetener"
+  max_label_trick_penalty: 12.0
+
+# ---------------------------------------------------------------------------
+# Positive Bonuses
+# ---------------------------------------------------------------------------
+positives:
+  high_fibre:
+    bonus: 3.0
+    threshold: ">=6g per 100g"
+  high_protein:
+    bonus: 2.0
+    threshold: ">=20% energy from protein"
+  whole_ingredient_list:
+    bonus: 5.0
+    trigger: "All ingredients are single-word whole foods"
+  short_ingredient_list:
+    bonus: 3.0
+    trigger: "<=5 ingredients, all recognisable"
+  organic_certified:
+    bonus: 2.0
+    trigger: "UK Soil Association or EU organic certification detected"
+  max_positive_bonus: 10.0
+
+# ---------------------------------------------------------------------------
+# Override Rules (Hard Flags)
+# ---------------------------------------------------------------------------
+overrides:
+  force_red:
+    - condition: "contains_trans_fat"
+      reason: "WHO elimination target; no safe consumption level"
+    - condition: "upf_marker_count >= 5"
+      reason: "Strong ultra-processing signal"
+    - condition: "fsa_red_on_3_of_4_nutrients"
+      reason: "FSA red on 3+ of 4 front-of-pack nutrients"
+  force_green:
+    - condition: "single_whole_ingredient"
+      reason: "NOVA Group 1 by definition"
